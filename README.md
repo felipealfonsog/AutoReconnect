@@ -44,6 +44,7 @@ AutoReconnect is a Python-based utility designed to manage WiFi connections usin
 -->
 
 https://aur.archlinux.org/packages/reconn
+
 AutoReconnect is available on AUR (Arch User Repository), and it can be installed using the `yay` package manager. Follow the steps below to install AutoReconnect:
 
 1. Make sure you have `yay` installed. If not, you can install it with the following command:
