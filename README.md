@@ -59,6 +59,8 @@ AutoReconnect is available on AUR (Arch User Repository), and it can be installe
    yay -S reconn
    ```
 
+then, run it in the terminal with 'reconn'.
+
 #
 
 
