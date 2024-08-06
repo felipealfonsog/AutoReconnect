@@ -2,7 +2,7 @@
 pkgname=reconn
 pkgver=0.0.1
 pkgrel=1
-pkgdesc="AutoReconnect 'reconn' is a Python-based utility designed to manage WiFi connections using ConnMan on Linux systems."
+pkgdesc="AutoReconnect 'reconn' is a utility designed to manage WiFi connections using ConnMan on Linux systems."
 arch=('x86_64')
 url="https://github.com/felipealfonsog/AutoReconnect"
 license=('BSD-3-Clause')
@@ -10,7 +10,7 @@ depends=('python' 'connman')
 
 source=("https://github.com/felipealfonsog/AutoReconnect/archive/refs/tags/v.${pkgver}.tar.gz")
 
-sha256sums=('41ae0b3468fc23dfcc1f451cbe8bf6f3f9d6023550b12ad6c3b244c20a098647')
+sha256sums=('13075a74d7f210a6f3606da41799bcd5c2b1258a42aabd8491257a729be9fab0')
 
 prepare() {
   tar xf "v.${pkgver}.tar.gz" -C "$srcdir" --strip-components=1
@@ -27,8 +27,8 @@ package() {
   install -Dm755 reconn "${pkgdir}/usr/local/bin/reconn"
 
   # Install the icon
-  install -Dm644 -p "$srcdir"/AutoReconnect-v."${pkgver}"/src/reconn-iconlogo.png "${pkgdir}/usr/share/pixmaps/reconn.png"
+  # install -Dm644 -p "$srcdir"/AutoReconnect-v."${pkgver}"/src/reconn-iconlogo.png "${pkgdir}/usr/share/pixmaps/reconn.png"
 
   # Install the .desktop file
-  install -Dm644 -p "$srcdir"/AutoReconnect-v."${pkgver}"/src/reconn.desktop "${pkgdir}/usr/share/applications/reconn.desktop"
+  # install -Dm644 -p "$srcdir"/AutoReconnect-v."${pkgver}"/src/reconn.desktop "${pkgdir}/usr/share/applications/reconn.desktop"
 }
