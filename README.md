@@ -1,6 +1,6 @@
 #### Connman AutoReconnect
 
-AutoReconnect is a Python-based utility designed to manage WiFi connections using ConnMan on Linux systems. It continuously monitors the network connection status, and if a disconnection is detected, it attempts to reconnect to the previously connected network or, if necessary, to the next available network. The tool checks for internet connectivity to ensure that the connection is stable and maintains it for uninterrupted access. Ideal for users who require persistent network connectivity and minimal manual intervention.
+AutoReconnect is a utility designed to manage WiFi connections using ConnMan on Linux systems. It continuously monitors the network connection status, and if a disconnection is detected, it attempts to reconnect to the previously connected network or, if necessary, to the next available network. The tool checks for internet connectivity to ensure that the connection is stable and maintains it for uninterrupted access. Ideal for users who require persistent network connectivity and minimal manual intervention.
 
 <sub>* This is currently an experimental phase where the primary focus is on making the system functional and establishing a practical and logical pathway that aligns with both my vision and the project's goals. It might contain errors, bugs, etc. Many other non-core elements of the project are considered secondary.</sub>
 
