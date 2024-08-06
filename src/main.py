@@ -1,133 +1,119 @@
 import subprocess
 import time
 
-def get_services():
+def get_connected_service():
+    """Get the currently connected WiFi service."""
     try:
-        output = subprocess.check_output(["connmanctl", "services"], text=True)
-        return output
-    except subprocess.CalledProcessError as e:
-        print("Failed to get services:", e)
-        return None
-
-def get_saved_networks():
-    try:
-        output = subprocess.check_output(["connmanctl", "services"], text=True)
-        networks = []
-        for line in output.splitlines():
-            if 'wifi_' in line:
+        result = subprocess.run(['connmanctl', 'services'], capture_output=True, text=True)
+        services = result.stdout.splitlines()
+        for line in services:
+            if line.startswith('*'):
+                # Extract the full service identifier
                 parts = line.split()
-                if len(parts) > 1:
-                    service_id = parts[0].strip('*')
-                    readable_ssid = ' '.join(parts[1:])
-                    networks.append((service_id, readable_ssid))
-        return networks
-    except subprocess.CalledProcessError as e:
-        print("Failed to get saved networks:", e)
-        return []
+                service = parts[-1]
+                return service
+    except Exception as e:
+        print(f"Error getting connected service: {e}")
+    return None
 
-def is_connected():
-    services_output = get_services()
-    if services_output:
-        for line in services_output.splitlines():
-            if '*' in line:
+def get_available_services():
+    """Get a list of all available WiFi services."""
+    try:
+        result = subprocess.run(['connmanctl', 'services'], capture_output=True, text=True)
+        services = result.stdout.splitlines()
+        available_services = []
+        for line in services:
+            if not line.startswith('*') and 'wifi' in line:
                 parts = line.split()
-                if len(parts) > 1:
-                    service_id = parts[0].strip('*')
-                    readable_ssid = ' '.join(parts[1:])
-                    return (service_id, readable_ssid)
-    return (None, None)
+                service = parts[-1]
+                available_services.append(service)
+        return available_services
+    except Exception as e:
+        print(f"Error getting available services: {e}")
+    return []
 
-def connect_to_network(service_id):
-    networks = get_saved_networks()
-    readable_ssid = next((ssid for net_id, ssid in networks if net_id == service_id), service_id)
-
-    print(f"Attempting to connect to {readable_ssid} ({service_id})...")
+def connect_service(service):
+    """Connect to a specified WiFi service using its full identifier."""
+    print(f"Attempting to connect to {service}")
     try:
-        result = subprocess.run(["connmanctl", "connect", service_id], capture_output=True, text=True)
-        print(f"Output of connect attempt:\n{result.stdout.strip()}\n{result.stderr.strip()}")
-        
-        if result.returncode == 0:
-            time.sleep(10)
-            connected_service_id, _ = is_connected()
-            if connected_service_id == service_id:
-                print(f"Successfully connected to {readable_ssid}.")
-                return True
-            else:
-                print(f"Failed to connect to {readable_ssid}.")
-                return False
-        else:
-            # Additional error handling
-            if "Already connected" in result.stderr:
-                print(f"Already connected to {readable_ssid}.")
-                return True
-            print(f"Error connecting to {readable_ssid}: {result.stderr.strip()}")
-            return False
-    except subprocess.CalledProcessError as e:
-        print("Failed to connect:", e)
-        return False
-
-def check_internet():
-    try:
-        subprocess.check_call(["ping", "-c", "1", "8.8.8.8"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        subprocess.run(['connmanctl', 'connect', service], check=True)
+        print(f"Connected to {service}")
         return True
-    except subprocess.CalledProcessError:
+    except subprocess.CalledProcessError as e:
+        print(f"Failed to connect to {service}: {e}")
         return False
 
-def main():
-    print("Checking initial connection...")
-    connected_service_id, connected_ssid = is_connected()
-    
-    if connected_service_id:
-        print(f"Initial connection: {connected_ssid} ({connected_service_id})")
-    else:
-        print("No initial connection. Scanning for networks...")
-    
-    internet_connected = True
+def disconnect_service(service):
+    """Disconnect from a specified WiFi service using its full identifier."""
+    print(f"Attempting to disconnect from {service}")
+    try:
+        subprocess.run(['connmanctl', 'disconnect', service], check=True)
+        print(f"Disconnected from {service}")
+    except subprocess.CalledProcessError as e:
+        print(f"Failed to disconnect from {service}: {e}")
+
+def restart_connman():
+    """Restart the ConnMan service."""
+    print("Restarting ConnMan service...")
+    try:
+        subprocess.run(['sudo', 'systemctl', 'restart', 'connman'], check=True)
+        print("ConnMan service restarted.")
+    except subprocess.CalledProcessError as e:
+        print(f"Failed to restart ConnMan service: {e}")
+
+def is_internet_connected():
+    """Check if the system is connected to the Internet."""
+    try:
+        result = subprocess.run(['ping', '-c', '1', '8.8.8.8'], capture_output=True, text=True)
+        return result.returncode == 0
+    except Exception as e:
+        print(f"Error checking Internet connection: {e}")
+    return False
+
+def monitor_wifi():
+    """Monitor WiFi connection status and reconnect if disconnected or move to the next network."""
+    connected_service = get_connected_service()
+    if connected_service is None:
+        print("No WiFi service is currently connected.")
+        return
+
+    print(f"Currently connected to: {connected_service}")
 
     while True:
-        if not check_internet():
-            print("No internet connection. Trying to reconnect to the last known network...")
-            if connected_service_id:
-                if connect_to_network(connected_service_id):
-                    time.sleep(10)
-                    if check_internet():
-                        print("Connected to the internet.")
-                        internet_connected = True
-                    else:
-                        print(f"Failed to reconnect to {connected_ssid} ({connected_service_id}). Trying other saved networks...")
-                        saved_networks = get_saved_networks()
-                        
-                        if saved_networks:
-                            for service_id, ssid in saved_networks:
-                                if service_id != connected_service_id:
-                                    print(f"Attempting to connect to {ssid} ({service_id})...")
-                                    if connect_to_network(service_id):
-                                        time.sleep(10)
-                                        
-                                        if check_internet():
-                                            print("Connected to the internet.")
-                                            internet_connected = True
-                                            connected_service_id = service_id
-                                            connected_ssid = ssid
-                                            break
-                                        else:
-                                            print(f"Failed to connect to {ssid} ({service_id})")
-                        else:
-                            print("No saved networks available to connect.")
-            else:
-                print("No saved network available to reconnect. Trying again...")
+        time.sleep(10)  # Check every 10 seconds
+        current_service = get_connected_service()
+
+        if current_service != connected_service:
+            print("Disconnected or connected to a different network.")
+            connected_service = current_service  # Update the current connected service
+
+        if not is_internet_connected():
+            print("Internet connection lost. Attempting to reconnect.")
+            disconnect_service(connected_service)
             
-            if not internet_connected:
-                print("Still no internet. Trying again...")
-                time.sleep(10)
+            if not connect_service(connected_service):
+                print("Failed to reconnect to the previous network. Trying the next available network.")
+                available_services = get_available_services()
                 
-        else:
-            if not internet_connected:
-                print("Connected to the internet.")
-                internet_connected = True
-            
-            connected_service_id, connected_ssid = is_connected()
-            time.sleep(10)
+                if available_services:
+                    # Remove the current service from the list if present
+                    if connected_service in available_services:
+                        available_services.remove(connected_service)
+                    
+                    # Try connecting to the next available service
+                    for service in available_services:
+                        if connect_service(service):
+                            connected_service = service
+                            break
+                else:
+                    print("No other WiFi networks available to connect.")
+                    # Restart ConnMan service if still no internet
+                    restart_connman()
+                    time.sleep(30)  # Wait a bit after restarting ConnMan
+                    # Retry connection after restarting ConnMan
+                    connected_service = get_connected_service()
+                    if connected_service:
+                        connect_service(connected_service)
 
 if __name__ == "__main__":
-    main()
+    monitor_wifi()
